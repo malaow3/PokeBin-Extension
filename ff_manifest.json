@@ -1,0 +1,21 @@
+{
+	"manifest_version": 3,
+	"name": "PokeBin-Extension",
+	"version": "1.0",
+	"description": "Enable imports / exports from PokeBin",
+	"icons": {
+		"48": "icons/spheal.png"
+	},
+	"permission": ["activeTab", "scripting"],
+	"content_scripts": [
+		{
+			"matches": [
+				"https://play.pokemonshowdown.com/teambuilder",
+				"http://play.pokemonshowdown.com/teambuilder",
+				"https://pokebin.com/*/json",
+				"https://pokebin.com/*/json"
+			],
+			"js": ["main.js"]
+		}
+	]
+}
