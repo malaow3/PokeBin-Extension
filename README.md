@@ -6,7 +6,7 @@ This is a helper tool for importing & exporting your teams to PokeBin while we w
 ## How to Install
 1. Install Tampermonkey for either [Chrome](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
 or [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
-2. Once Tampermonkey is installed, navigate to this link to install the script: 
+2. Once Tampermonkey is installed, navigate to this [link](https://github.com/malaow3/PokeBin-Extension/raw/main/build/pokebin-ext.user.js) to install the script
 
 ## Why not a proper web-extension?
 There are a couple of reasons why I opted for a userscript approach:
@@ -20,4 +20,5 @@ To build from source, you can follow the guide below. Please first have [Bun](ht
 1. Clone the repo
 2. Run `bun install`
 3. Run `bun run build`
-4. Copy the contents of `build/main.user.js` to Tampermonkey
+4. 
+
