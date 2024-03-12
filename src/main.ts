@@ -1,8 +1,32 @@
 import upload from "./upload.svelte";
 import pokebin_import from "./import.svelte";
+import ots_battle_upload from "./ots_battle_upload.svelte";
 
 let upload_inserted = false;
 let import_handled = false;
+let OTS_battle_inserted = false;
+
+function processDetails(detailsElement: Element | ChildNode) {
+	let textContent = "";
+	for (const node of detailsElement.childNodes) {
+		// Skip if the node is a <summary> element
+		if (node.nodeName.toLowerCase() === "summary") {
+			continue;
+		}
+
+		// If the node is a text node, add its text
+		if (node.nodeType === Node.TEXT_NODE) {
+			textContent += node.nodeValue;
+		}
+
+		// If the node is a <br>, add a newline
+		if (node.nodeName.toLowerCase() === "br") {
+			textContent += "\n";
+		}
+	}
+
+	return textContent;
+}
 
 function handle_dom_changes(): void {
 	const targetButtonSelector = 'button[name="validate"]';
@@ -41,6 +65,31 @@ function handle_dom_changes(): void {
 		}
 	} else {
 		import_handled = false;
+	}
+
+	const details = document.querySelectorAll("div.battle-log details");
+	if (details) {
+		for (const child of details) {
+			const textContent = processDetails(child);
+			const id = window.location.toString().split("/").pop();
+			const summary = child.querySelector("summary");
+			if (summary) {
+				const user = summary.textContent?.slice("Open Team Sheet for ".length);
+				const button_id = `${id}-${user}`;
+				const existing_button = document.getElementById(button_id);
+				if (!existing_button) {
+					// Create a button with the button_id
+					const button = document.createElement("button");
+					button.id = button_id;
+					button.classList.add("button");
+					button.textContent = "Upload to PokeBin";
+
+					// Append it to the summary.
+					summary.insertAdjacentElement("afterend", button);
+				}
+			}
+			// console.info(textContent);
+		}
 	}
 }
 
