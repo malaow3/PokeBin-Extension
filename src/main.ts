@@ -4,7 +4,6 @@ import ots_battle_upload from "./ots_battle_upload.svelte";
 
 let upload_inserted = false;
 let import_handled = false;
-let OTS_battle_inserted = false;
 
 function processDetails(detailsElement: Element | ChildNode) {
 	let textContent = "";
@@ -71,24 +70,26 @@ function handle_dom_changes(): void {
 	if (details) {
 		for (const child of details) {
 			const textContent = processDetails(child);
-			const id = window.location.toString().split("/").pop();
 			const summary = child.querySelector("summary");
 			if (summary) {
 				const user = summary.textContent?.slice("Open Team Sheet for ".length);
-				const button_id = `${id}-${user}`;
+				const button_id = `${user}`;
 				const existing_button = document.getElementById(button_id);
 				if (!existing_button) {
 					// Create a button with the button_id
-					const button = document.createElement("button");
-					button.id = button_id;
-					button.classList.add("button");
-					button.textContent = "Upload to PokeBin";
-
+					const otsUpload = document.createElement("div");
+					otsUpload.id = button_id;
+					new ots_battle_upload({
+						target: otsUpload,
+						props: {
+							author: user,
+							text: textContent,
+						},
+					});
 					// Append it to the summary.
-					summary.insertAdjacentElement("afterend", button);
+					summary.insertAdjacentElement("afterend", otsUpload);
 				}
 			}
-			// console.info(textContent);
 		}
 	}
 }
