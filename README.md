@@ -20,5 +20,5 @@ To build from source, you can follow the guide below. Please first have [Bun](ht
 1. Clone the repo
 2. Run `bun install`
 3. Run `bun run build`
-4. 
+4. Copy the contents of `build/pokebin-ext.user.js` to Tampermonkey
 
