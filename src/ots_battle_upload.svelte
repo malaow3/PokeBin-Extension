@@ -2,10 +2,16 @@
 	export let text: string;
 	export let author: string;
 
-	async function process_button(
+	async function ots_process_button(
 		e: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement },
 	) {
 		e.preventDefault();
+		if (!text || !author) {
+			console.warn(
+				"Missing text or author information. Cannot submit form.",
+			);
+			return;
+		}
 		let form = document.getElementById(
 			"OTSPokeBinForm",
 		)! as HTMLFormElement;
@@ -49,7 +55,7 @@
 			target="_blank"
 			class="form-row"
 			on:submit={(e) => {
-				return process_button(e);
+				return ots_process_button(e);
 			}}
 		>
 			<button class="button" type="submit">Upload to PokeBin</button>

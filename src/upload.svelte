@@ -1,51 +1,14 @@
 <script lang="ts">
 	import { encryptMessage } from "./helpers";
 
+	// @ts-ignore
+	let usfw = unsafeWindow;
+
 	async function onkey(e: { key: any }) {
 		// If the key is enter, submit.
 		if (e.key === "Enter") {
 			await process_button();
 		}
-	}
-	type PokeBinCurTeamData = {
-		name: string;
-		format: string;
-		gen: string;
-		team: string;
-		author: string;
-	};
-	function injectScript(ots: boolean) {
-		const script = document.createElement("script");
-		script.type = "text/javascript";
-		script.id = "messenger";
-		if (ots) {
-			script.textContent = `
-			(function() {
-				window.PokeBinCurTeamData = {
-					"name": window.room.curTeam.name,
-					"format": window.room.curTeam.format,
-					"gen": window.room.curTeam.gen,
-					"team": window.Storage.exportTeam(window.room.curTeam.team, window.room.curTeam.gen, true),
-					"author": window.app.user.attributes.name
-				};
-				window.postMessage(JSON.stringify({ type: 'customTeamMsg', curTeam: window.PokeBinCurTeamData }), '*');
-			})();
-			`;
-		} else {
-			script.textContent = `
-			(function() {
-				window.PokeBinCurTeamData = {
-					"name": window.room.curTeam.name,
-					"format": window.room.curTeam.format,
-					"gen": window.room.curTeam.gen,
-					"team": window.Storage.exportTeam(window.room.curTeam.team, window.room.curTeam.gen, false),
-					"author": window.app.user.attributes.name
-				};
-				window.postMessage(JSON.stringify({ type: 'customTeamMsg', curTeam: window.PokeBinCurTeamData }), '*');
-			})();
-			`;
-		}
-		(document.head || document.documentElement).appendChild(script);
 	}
 
 	async function process_button(
@@ -53,88 +16,70 @@
 			| (SubmitEvent & { currentTarget: EventTarget & HTMLFormElement })
 			| null = null,
 	) {
-		console.info("PROCESSING UPLOAD");
 		let ots_element = document.getElementById("ots")! as HTMLInputElement;
 		let ots = ots_element.checked;
 		if (e) {
 			e.preventDefault();
 		}
-		window.addEventListener("message", async function handler(event) {
-			if (event.source === window) {
-				try {
-					const data = JSON.parse(event.data);
-					if (data.type === "customTeamMsg") {
-						const current_team = data.curTeam as PokeBinCurTeamData;
-						if (current_team.team == "") {
-							alert("Please add a Pokemon first!");
-							return;
-						}
+		console.info(usfw.room);
+		console.info(usfw.room.curTeam);
+		if (usfw.room.curTeam.team.length === 0) {
+			alert("No team selected.");
+			return;
+		}
 
-						let password_element = document.getElementById(
-							"password",
-						)! as HTMLInputElement;
-						let password = password_element.value as string;
-						let form = document.getElementById(
-							"PokeBinForm",
-						)! as HTMLFormElement;
+		let name = usfw.room.curTeam.name;
+		let format = usfw.room.curTeam.format;
+		let gen = usfw.room.curTeam.gen;
+		let team = usfw.Storage.exportTeam(usfw.room.curTeam.team, gen, ots);
+		let author = usfw.app.user.attributes.name;
 
-						if (password !== "") {
-							let content = current_team.team.replaceAll(
-								"\\n",
-								"\n",
-							);
+		let password_element = document.getElementById(
+			"password",
+		)! as HTMLInputElement;
+		let password = password_element.value as string;
+		let form = document.getElementById("PokeBinForm")! as HTMLFormElement;
 
-							let jsondata = {
-								title: current_team.name,
-								author: current_team.author,
-								notes: "",
-								format: current_team.format,
-								rental: "",
-							};
-							content =
-								JSON.stringify(jsondata) +
-								"\n-----\n" +
-								content;
-							// AES encrypt the paste
-							let data = await encryptMessage(password, content);
-							// Submit the form removing the password
+		if (password !== "") {
+			let content = team.replaceAll("\\n", "\n");
 
-							let hidden_input = document.getElementById(
-								"encrypted_data",
-							)! as HTMLInputElement;
-							hidden_input.value = data;
-							form.submit();
-						} else {
-							let title = document.getElementById(
-								"title",
-							)! as HTMLInputElement;
-							let format = document.getElementById(
-								"format",
-							)! as HTMLInputElement;
-							let author = document.getElementById(
-								"author",
-							)! as HTMLInputElement;
-							let paste = document.getElementById(
-								"paste",
-							)! as HTMLTextAreaElement;
-							title.value = current_team.name;
-							format.value = current_team.format;
-							author.value = current_team.author;
-							paste.value = current_team.team.replaceAll(
-								"\\n",
-								"\n",
-							);
+			let jsondata = {
+				title: name,
+				author: author,
+				notes: "",
+				format: format,
+				rental: "",
+			};
+			content = JSON.stringify(jsondata) + "\n-----\n" + content;
+			// AES encrypt the paste
+			let data = await encryptMessage(password, content);
+			// Submit the form removing the password
 
-							form.submit();
-						}
-					}
-				} catch (error) {
-					console.error("Error parsing message data:", error);
-				}
-			}
-		});
+			let hidden_input = document.getElementById(
+				"encrypted_data",
+			)! as HTMLInputElement;
+			hidden_input.value = data;
+			form.submit();
+		} else {
+			let title_element = document.getElementById(
+				"title",
+			)! as HTMLInputElement;
+			let format_element = document.getElementById(
+				"format",
+			)! as HTMLInputElement;
+			let author_element = document.getElementById(
+				"author",
+			)! as HTMLInputElement;
+			let paste_element = document.getElementById(
+				"paste",
+			)! as HTMLTextAreaElement;
+			title_element.value = name;
+			format_element.value = format;
+			author_element.value = author;
+			paste_element.value = team.replaceAll("\\n", "\n");
 
-		injectScript(ots);
+			form.submit();
+		}
 	}
 </script>
 

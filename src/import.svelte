@@ -2,6 +2,9 @@
 	import { match } from "ts-pattern";
 	import { decryptMessage } from "./helpers";
 
+	// @ts-ignore
+	let usfw = unsafeWindow;
+
 	async function onkey(e: { key: any }) {
 		// If the key is enter, submit.
 		if (e.key === "Enter") {
@@ -19,8 +22,8 @@
 			return;
 		}
 
-		let value = importableUrl(contents);
-		if (value === "") {
+		let url = importableUrl(contents);
+		if (url === "") {
 			alert("Not a valid PokeBin URL");
 			return;
 		}
@@ -29,55 +32,6 @@
 			document.getElementById("password-import")! as HTMLInputElement
 		).value;
 
-		window.addEventListener("message", async function handler(event) {
-			if (event.source === window) {
-				try {
-					const response_data = JSON.parse(event.data);
-					if (response_data.type === "importTeamMsg") {
-						console.info("Imported team");
-					} else if (
-						response_data.type == "importTeamMsg-decrypted"
-					) {
-						let decrypted = await decryptMessage(
-							password as string,
-							response_data.data,
-						);
-						let data = "";
-						match(decrypted)
-							.with({ type: "error" }, async () => {
-								alert("Incorrect password.");
-								return;
-							})
-							.with({ type: "ok" }, ({ unwrap }) => {
-								data = unwrap();
-							});
-						let content = data.split("\n-----\n");
-						let metadata = JSON.parse(content[0]);
-						data = content[1];
-						let raw_title = metadata.title;
-						let raw_format = metadata.format;
-						injectScript2(
-							raw_title,
-							raw_format,
-							data.replaceAll("\n", "\\n"),
-						);
-					}
-				} catch (e) {
-					console.error(e);
-				}
-			}
-		});
-		injectScript(value, password);
-	}
-
-	function importableUrl(value: string): string {
-		var match = value.match(/^https?:\/\/(pokebin\.com)\/(.*)\s*$/);
-		if (!match) return "";
-		var path = match[2];
-		return "https://pokebin.com/" + path.replace(/\/.*/, "") + "/json";
-	}
-
-	async function handler(url: string, password: string) {
 		let response = await fetch(url);
 		let response_data = await response.json();
 
@@ -86,109 +40,49 @@
 			alert("You need to enter a password to import.");
 			return;
 		} else if (response_data.encrypted_data && password !== "") {
-			window.postMessage(
-				JSON.stringify({
-					type: "importTeamMsg-decrypted",
-					data: response_data.encrypted_data,
-				}),
-				"*",
+			let decrypted = await decryptMessage(
+				password as string,
+				response_data.data,
 			);
-		} else if (!response_data.encrypted_data) {
-			let notes = response_data.notes.split("\n");
-			if (notes[0].startsWith("Format: ")) {
-				// @ts-ignore
-				let formatid = toID(notes[0].slice(8));
-				let format =
-					// @ts-ignore
-					window.BattleFormats && window.BattleFormats[formatid];
-				// @ts-ignore
-				if (format) self.room.changeFormat(format.id);
-				notes.shift();
-			}
-			let title = response_data.title;
-			if (title && !title.startsWith("Untitled")) {
-				title = title.replace(/[\|\\\/]/g, "");
-				// @ts-ignore
-				self.$(".teamnameedit").val(title).change();
-			}
-			// @ts-ignore
-			window.Storage.activeSetList = window.room.curSetList =
-				// @ts-ignore
-				window.Storage.importTeam(response_data.paste);
-			// @ts-ignore
-			window.room.updateTeamView();
-
-			window.postMessage(
-				JSON.stringify({ type: "importTeamMsg", data: response_data }),
-				"*",
-			);
+			let data = "";
+			match(decrypted)
+				.with({ type: "error" }, async () => {
+					alert("Incorrect password.");
+					return;
+				})
+				.with({ type: "ok" }, ({ unwrap }) => {
+					data = unwrap();
+				});
+			let content = data.split("\n-----\n");
+			let metadata = JSON.parse(content[0]);
+			data = content[1];
+			response_data.title = metadata.title;
+			response_data.paste = data;
+			response_data.notes = metadata.format + "\n" + metadata.notes;
 		}
-	}
 
-	async function handler2(
-		raw_title: string,
-		raw_format: string,
-		data: string,
-	) {
-		// @ts-ignore
-		let formatid = toID(raw_format);
-		let format =
-			// @ts-ignore
-			window.BattleFormats && window.BattleFormats[formatid];
-		// @ts-ignore
-		if (format) self.room.changeFormat(format.id);
-		let title = raw_title;
+		let notes = response_data.notes.split("\n");
+		if (notes[0].startsWith("Format: ")) {
+			let formatid = usfw.toID(notes[0].slice(8));
+			let format = usfw.BattleFormats && usfw.BattleFormats[formatid];
+			if (format) usfw.room.changeFormat(format.id);
+			notes.shift();
+		}
+		let title = response_data.title;
 		if (title && !title.startsWith("Untitled")) {
 			title = title.replace(/[\|\\\/]/g, "");
-			// @ts-ignore
-			self.$(".teamnameedit").val(title).change();
+			usfw.$(".teamnameedit").val(title).change();
 		}
-		// @ts-ignore
-		window.Storage.activeSetList = window.room.curSetList =
-			// @ts-ignore
-			window.Storage.importTeam(data);
-		// @ts-ignore
-		window.room.updateTeamView();
-
-		window.postMessage(
-			JSON.stringify({ type: "importTeamMsg", data: data }),
-			"*",
-		);
+		usfw.Storage.activeSetList = usfw.room.curSetList =
+			usfw.Storage.importTeam(response_data.paste);
+		usfw.room.updateTeamView();
 	}
 
-	function injectScript(url: string, password: string = "") {
-		const script = document.createElement("script");
-		script.type = "text/javascript";
-		script.id = "messenger";
-		let content = handler.toString();
-		script.textContent = `
-			(${content})("${url}", "${password}");
-		`;
-		(document.head || document.documentElement).appendChild(script);
-
-		// Remove the script.
-		script.remove();
-	}
-
-	function injectScript2(
-		raw_title: string,
-		raw_format: string,
-		data: string,
-	) {
-		const script = document.createElement("script");
-		script.type = "text/javascript";
-		script.id = "messenger";
-		let content = handler2.toString();
-		script.textContent = `
-			(${content})("${raw_title}", "${raw_format}", "${data.replaceAll(
-				/\\\\n/g,
-				"\\n",
-			)}");
-		`;
-		(document.head || document.documentElement).appendChild(script);
-
-		// Remove the script.
-		script.remove();
+	function importableUrl(value: string): string {
+		var match = value.match(/^https?:\/\/(pokebin\.com)\/(.*)\s*$/);
+		if (!match) return "";
+		var path = match[2];
+		return "https://pokebin.com/" + path.replace(/\/.*/, "") + "/json";
 	}
 </script>
 
