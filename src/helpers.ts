@@ -1,4 +1,4 @@
-import { Err, None, Ok, Option, Result, Some } from "bakutils-catcher";
+import * as bakutilsCatcher from "bakutils-catcher";
 import { match } from "ts-pattern";
 
 // Utility function to convert strings to ArrayBuffers
@@ -73,7 +73,7 @@ function hexStringToArrayBuffer(hexString: string): ArrayBuffer {
 
 	for (let i = 0; i < length; i++) {
 		const byte = hexString.substring(i * 2, i * 2 + 2);
-		view[i] = parseInt(byte, 16);
+		view[i] = Number.parseInt(byte, 16);
 	}
 
 	return arrayBuffer;
@@ -83,7 +83,7 @@ function hexStringToArrayBuffer(hexString: string): ArrayBuffer {
 async function decryptMessage(
 	passphrase: string,
 	content: string,
-): Promise<Result<string, string>> {
+): Promise<bakutilsCatcher.Result<string, string>> {
 	const ivHex = content.split(":")[0];
 	const hexString = content.split(":")[1];
 
@@ -99,10 +99,10 @@ async function decryptMessage(
 			key,
 			encryptedContent,
 		);
-		return Ok(ab2str(decryptedContent));
+		return bakutilsCatcher.Ok(ab2str(decryptedContent));
 	} catch (error) {
 		console.error(error);
-		return Err("Unable to decrypt data");
+		return bakutilsCatcher.Err("Unable to decrypt data");
 	}
 }
 
@@ -117,20 +117,21 @@ function arrayBufferToHexString(arrayBuffer: ArrayBuffer): string {
 function search_like<T>(
 	hashmap: Map<string, T>,
 	pattern: string,
-): Option<[string, T]> {
+): bakutilsCatcher.Option<[string, T]> {
 	// Check for a direct match.
 	const value = hashmap.get(pattern);
 	if (value !== undefined) {
-		return Some([pattern, value]);
+		return bakutilsCatcher.Some([pattern, value]);
 	}
 
 	const regex_pattern = `^${pattern.replace("_", ".")}.*`;
 	console.log(regex_pattern);
 	// Iterate over the map.
-	let regex_match_value: Option<[string, T]> = None;
+	let regex_match_value: bakutilsCatcher.Option<[string, T]> =
+		bakutilsCatcher.None;
 	hashmap.forEach((v, k, _map) => {
 		if (k.match(regex_pattern) !== null) {
-			regex_match_value = Some([k, v]);
+			regex_match_value = bakutilsCatcher.Some([k, v]);
 		}
 	});
 
@@ -141,16 +142,16 @@ function search_like<T>(
 	const old_pattern = pattern;
 	const pat = pattern.split("-")[0];
 	if (old_pattern === pat) {
-		return None;
+		return bakutilsCatcher.None;
 	}
 
 	const res = search_like(hashmap, pat);
 	if (res.isSome()) {
 		const tuple = res.unwrap();
-		return Some([old_pattern, tuple[1]]);
+		return bakutilsCatcher.Some([old_pattern, tuple[1]]);
 	}
 
-	return None;
+	return bakutilsCatcher.None;
 }
 
 interface DynamicObject {

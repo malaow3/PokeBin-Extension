@@ -1,86 +1,84 @@
 <script lang="ts">
-	import { encryptMessage } from "./helpers";
+import { encryptMessage } from "./helpers";
 
-	// @ts-ignore
-	let usfw = unsafeWindow;
+// @ts-ignore
+const usfw = unsafeWindow;
 
-	async function onkey(e: { key: any }) {
-		// If the key is enter, submit.
-		if (e.key === "Enter") {
-			await process_button();
-		}
+async function onkey(e: { key: string }) {
+	// If the key is enter, submit.
+	if (e.key === "Enter") {
+		await process_button();
+	}
+}
+
+async function process_button(
+	e:
+		| (SubmitEvent & { currentTarget: EventTarget & HTMLFormElement })
+		| null = null,
+) {
+	const ots_element = document.getElementById("ots") as HTMLInputElement;
+	const ots = ots_element.checked;
+	if (e) {
+		e.preventDefault();
+	}
+	console.info(usfw.room);
+	console.info(usfw.room.curTeam);
+	if (usfw.room.curTeam.team.length === 0) {
+		alert("No team selected.");
+		return;
 	}
 
-	async function process_button(
-		e:
-			| (SubmitEvent & { currentTarget: EventTarget & HTMLFormElement })
-			| null = null,
-	) {
-		let ots_element = document.getElementById("ots")! as HTMLInputElement;
-		let ots = ots_element.checked;
-		if (e) {
-			e.preventDefault();
-		}
-		console.info(usfw.room);
-		console.info(usfw.room.curTeam);
-		if (usfw.room.curTeam.team.length === 0) {
-			alert("No team selected.");
-			return;
-		}
+	const name = usfw.room.curTeam.name;
+	const format = usfw.room.curTeam.format;
+	const gen = usfw.room.curTeam.gen;
+	const team = usfw.Storage.exportTeam(usfw.room.curTeam.team, gen, ots);
+	const author = usfw.app.user.attributes.name;
 
-		let name = usfw.room.curTeam.name;
-		let format = usfw.room.curTeam.format;
-		let gen = usfw.room.curTeam.gen;
-		let team = usfw.Storage.exportTeam(usfw.room.curTeam.team, gen, ots);
-		let author = usfw.app.user.attributes.name;
+	const password_element = document.getElementById(
+		"password",
+	) as HTMLInputElement;
+	const password = password_element.value as string;
+	const form = document.getElementById("PokeBinForm") as HTMLFormElement;
 
-		let password_element = document.getElementById(
-			"password",
-		)! as HTMLInputElement;
-		let password = password_element.value as string;
-		let form = document.getElementById("PokeBinForm")! as HTMLFormElement;
+	if (password !== "") {
+		let content = team.replaceAll("\\n", "\n");
 
-		if (password !== "") {
-			let content = team.replaceAll("\\n", "\n");
+		const jsondata = {
+			title: name,
+			author: author,
+			notes: "",
+			format: format,
+			rental: "",
+		};
+		content = `${JSON.stringify(jsondata)}\n-----\n${content}`;
+		// AES encrypt the paste
+		const data = await encryptMessage(password, content);
+		// Submit the form removing the password
 
-			let jsondata = {
-				title: name,
-				author: author,
-				notes: "",
-				format: format,
-				rental: "",
-			};
-			content = JSON.stringify(jsondata) + "\n-----\n" + content;
-			// AES encrypt the paste
-			let data = await encryptMessage(password, content);
-			// Submit the form removing the password
+		const hidden_input = document.getElementById(
+			"encrypted_data",
+		) as HTMLInputElement;
+		hidden_input.value = data;
+		form.submit();
+	} else {
+		const title_element = document.getElementById("title") as HTMLInputElement;
+		const format_element = document.getElementById(
+			"format",
+		) as HTMLInputElement;
+		const author_element = document.getElementById(
+			"author",
+		) as HTMLInputElement;
+		const paste_element = document.getElementById(
+			"paste",
+		) as HTMLTextAreaElement;
+		title_element.value = name;
+		format_element.value = format;
+		author_element.value = author;
+		paste_element.value = team.replaceAll("\\n", "\n");
 
-			let hidden_input = document.getElementById(
-				"encrypted_data",
-			)! as HTMLInputElement;
-			hidden_input.value = data;
-			form.submit();
-		} else {
-			let title_element = document.getElementById(
-				"title",
-			)! as HTMLInputElement;
-			let format_element = document.getElementById(
-				"format",
-			)! as HTMLInputElement;
-			let author_element = document.getElementById(
-				"author",
-			)! as HTMLInputElement;
-			let paste_element = document.getElementById(
-				"paste",
-			)! as HTMLTextAreaElement;
-			title_element.value = name;
-			format_element.value = format;
-			author_element.value = author;
-			paste_element.value = team.replaceAll("\\n", "\n");
-
-			form.submit();
-		}
+		form.submit();
 	}
+}
 </script>
 
 <main>
