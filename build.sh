@@ -2,7 +2,7 @@
 
 bun run build:internal;
 mkdir -p build;
-cp dist/assets/main.js build/pokebin-ext.user.js;
+cp dist/static/js/main.js build/pokebin-ext.user.js;
 
 cp -r icons build;
 
