@@ -75,10 +75,22 @@ const Import = () => {
     };
 
     const importableUrl = (value: string): string => {
-        const match = value.match(/^https?:\/\/(pokebin\.com)\/(.*)\s*$/);
-        if (!match) return "";
-        const path = match[2];
-        return `https://pokebin.com/${path.replace(/\/.*/, "")}/json`;
+        if (!value.startsWith("https://pokebin.com/")) {
+            throw new Error("Not a valid PokeBin URL");
+        }
+        let new_value = value;
+        if (!value.endsWith("/json")) {
+            if (!value.endsWith("/")) {
+                new_value = `${value}/json`;
+            } else {
+                new_value = `${value}json`;
+            }
+        }
+        return new_value;
+        // const match = value.match(/^https?:\/\/(pokebin\.com)\/(.*)\s*$/);
+        // if (!match) return "";
+        // const path = match[2];
+        // return `https://pokebin.com/${path.replace(/\/.*/, "")}/json`;
     };
 
     return (
@@ -101,7 +113,7 @@ const Import = () => {
                 value={password()}
                 onInput={(e) => setPassword(e.currentTarget.value)}
             />
-            <button type="button" class="button" onClick={submit}>
+            <button type="submit" class="button" onClick={submit}>
                 Import from PokeBin
             </button>
 
