@@ -19,6 +19,7 @@ export default defineConfig({
 	source: {
 		entry: {
 			main: "./src/main.tsx",
+			inject: "./src/inject.ts",
 		},
 	},
 	tools: {
